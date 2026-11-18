@@ -46,6 +46,7 @@ async function Visit({ params }: { params: PageProps<"/visits/[id]">["params"] }
       <VisitEditor
         key={visit.id}
         visitId={visit.id}
+        createdAt={visit.createdAt}
         server={{ items: visit.items, submittedAt: visit.submittedAt }}
       />
     </>

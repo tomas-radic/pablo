@@ -18,6 +18,7 @@ export type Visit = {
   label: string;
   date: string;
   submittedAt: string | null; // last successful submit of the item list
+  createdAt: string;
   items: Item[];
 };
 
@@ -47,7 +48,7 @@ export function listVisits(userId: number): VisitSummary[] {
 
 export function getVisit(userId: number, visitId: number): Visit | null {
   const row = db()
-    .prepare("SELECT id, label, date, items_submitted_at FROM visits WHERE id = ? AND user_id = ?")
+    .prepare("SELECT id, label, date, items_submitted_at, created_at FROM visits WHERE id = ? AND user_id = ?")
     .get(visitId, userId);
   if (!row) return null;
   const items = db()
@@ -63,6 +64,7 @@ export function getVisit(userId: number, visitId: number): Visit | null {
     label: row.label as string,
     date: row.date as string,
     submittedAt: row.items_submitted_at as string | null,
+    createdAt: row.created_at as string,
     items,
   };
 }
@@ -78,6 +80,12 @@ export function updateVisit(userId: number, visitId: number, label: string, date
   const result = db()
     .prepare("UPDATE visits SET label = ?, date = ? WHERE id = ? AND user_id = ?")
     .run(label, date, visitId, userId);
+  return result.changes > 0;
+}
+
+/** Deletes a visit and (through the foreign key) its items. */
+export function deleteVisit(userId: number, visitId: number): boolean {
+  const result = db().prepare("DELETE FROM visits WHERE id = ? AND user_id = ?").run(visitId, userId);
   return result.changes > 0;
 }
 

@@ -40,6 +40,18 @@ export function ServiceWorker() {
   return null;
 }
 
+/** Drops the offline copies of specific pages, e.g. of a deleted visit. */
+export async function forgetOfflinePages(paths: string[]): Promise<void> {
+  if (!("caches" in window)) return;
+  const keys = await caches.keys();
+  for (const key of keys.filter((k) => k.startsWith("publog-pages"))) {
+    const cache = await caches.open(key);
+    for (const request of await cache.keys()) {
+      if (paths.includes(new URL(request.url).pathname)) await cache.delete(request);
+    }
+  }
+}
+
 /** Removes cached pages, e.g. on sign-out, so the next person can't see them offline. */
 export async function clearOfflineCache(): Promise<void> {
   if (!("caches" in window)) return;

@@ -6,6 +6,7 @@ import { getVisit } from "@/lib/visits";
 import { updateVisitAction } from "../../actions";
 import { VisitForm } from "../../visit-form";
 import { PageHeader } from "../../page-header";
+import { DeleteVisit } from "./delete-visit";
 
 export const metadata: Metadata = { title: "Edit visit" };
 
@@ -35,6 +36,12 @@ async function EditVisit({ params, searchParams }: PageProps<"/visits/[id]/edit"
         initial={{ label: visit.label, date: visit.date }}
         submitLabel="Save"
         cancelHref={backHref}
+      />
+      <DeleteVisit
+        visitId={visit.id}
+        label={visit.label}
+        createdAt={visit.createdAt}
+        itemCount={visit.items.reduce((sum, item) => sum + item.count, 0)}
       />
     </>
   );

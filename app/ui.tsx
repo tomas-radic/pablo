@@ -9,6 +9,9 @@ export const primaryButtonClass =
 export const secondaryButtonClass =
   "inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-line bg-surface px-5 font-medium text-ink active:scale-[0.98] transition";
 
+export const dangerButtonClass =
+  "inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-danger px-5 font-semibold text-bg active:scale-[0.98] disabled:opacity-60 transition";
+
 export const iconButtonClass =
   "inline-flex size-11 shrink-0 items-center justify-center rounded-full text-ink active:bg-surface-2 transition";
 

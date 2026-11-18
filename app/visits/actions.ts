@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { getCurrentUser, signOut } from "@/lib/auth";
-import { createVisit, updateVisit, validateVisit } from "@/lib/visits";
+import { createVisit, deleteVisit, updateVisit, validateVisit } from "@/lib/visits";
 
 export type VisitFormState = { error: string } | null;
 
@@ -30,6 +30,12 @@ export async function updateVisitAction(
     return { error: "This visit doesn’t exist any more." };
   }
   redirect(returnTo === "visit" ? `/visits/${visitId}` : "/");
+}
+
+export async function deleteVisitAction(visitId: number): Promise<{ error: string } | { ok: true }> {
+  const user = await getCurrentUser();
+  if (!deleteVisit(user.id, visitId)) return { error: "This visit doesn’t exist any more." };
+  return { ok: true };
 }
 
 export async function signOutAction(): Promise<void> {

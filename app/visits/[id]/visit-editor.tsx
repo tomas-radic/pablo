@@ -19,7 +19,7 @@ import {
   updateItem,
   type Item,
 } from "@/lib/items";
-import { createDraftStore, type DraftStore, type ServerList } from "@/lib/draft";
+import { createDraftStore, draftKey, type DraftStore, type ServerList } from "@/lib/draft";
 import { formatLocalTimestamp } from "@/lib/dates";
 import { MinusIcon, PlusIcon, inputClass, primaryButtonClass, secondaryButtonClass } from "../../ui";
 
@@ -31,8 +31,16 @@ type Status =
   | { kind: "signed-out" }
   | { kind: "error"; message: string };
 
-export function VisitEditor({ visitId, server }: { visitId: number; server: ServerList }) {
-  const [store] = useState(() => createDraftStore(visitId, server));
+export function VisitEditor({
+  visitId,
+  createdAt,
+  server,
+}: {
+  visitId: number;
+  createdAt: string;
+  server: ServerList;
+}) {
+  const [store] = useState(() => createDraftStore(draftKey(visitId, createdAt), server));
   const draft = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot);
   const hydrated = useHydrated();
   const [status, setStatus] = useState<Status>({ kind: "idle" });

@@ -33,11 +33,17 @@ export function chooseDraft(server: ServerList, local: Draft | null): Draft {
   return local;
 }
 
-const storageKey = (visitId: number) => `publog:visit:${visitId}:v1`;
+/**
+ * Where a visit's draft is kept. Includes the creation time because SQLite can give a
+ * new visit the id of a deleted one, and the old draft must not show up there.
+ */
+export function draftKey(visitId: number, createdAt: string): string {
+  return `publog:visit:${visitId}:${createdAt}`;
+}
 
-export function readDraft(visitId: number): Draft | null {
+export function readDraft(key: string): Draft | null {
   try {
-    const raw = localStorage.getItem(storageKey(visitId));
+    const raw = localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Draft;
     return Array.isArray(parsed.items) ? parsed : null;
@@ -46,22 +52,30 @@ export function readDraft(visitId: number): Draft | null {
   }
 }
 
-export function writeDraft(visitId: number, draft: Draft): void {
+export function writeDraft(key: string, draft: Draft): void {
   try {
-    localStorage.setItem(storageKey(visitId), JSON.stringify(draft));
+    localStorage.setItem(key, JSON.stringify(draft));
   } catch {
     // Private mode or full storage: editing still works for this page view.
   }
 }
 
+export function removeDraft(key: string): void {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Nothing stored, or storage unavailable.
+  }
+}
+
 /** A tiny store for useSyncExternalStore: server data during SSR, the phone's copy after. */
-export function createDraftStore(visitId: number, server: ServerList) {
+export function createDraftStore(key: string, server: ServerList) {
   const serverDraft = draftFromServer(server);
   let current: Draft | null = null;
   const listeners = new Set<() => void>();
 
   const getSnapshot = (): Draft => {
-    current ??= chooseDraft(server, readDraft(visitId));
+    current ??= chooseDraft(server, readDraft(key));
     return current;
   };
 
@@ -74,7 +88,7 @@ export function createDraftStore(visitId: number, server: ServerList) {
     getServerSnapshot: () => serverDraft,
     update(change: (draft: Draft) => Draft) {
       current = change(getSnapshot());
-      writeDraft(visitId, current);
+      writeDraft(key, current);
       listeners.forEach((listener) => listener());
     },
   };
