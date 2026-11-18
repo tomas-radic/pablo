@@ -132,6 +132,24 @@ export function changeCount(items: Item[], name: string, delta: 1 | -1): Item[] 
   );
 }
 
+/**
+ * Renames an item and sets or clears (null) its price, keeping its count and place.
+ * Returns "duplicate" when the new name belongs to another item in the list.
+ */
+export function updateItem(
+  items: Item[],
+  name: string,
+  change: { name: string; priceCents: number | null },
+): Item[] | "duplicate" {
+  const key = itemKey(name);
+  const newName = cleanName(change.name);
+  const newKey = itemKey(newName);
+  if (newKey !== key && items.some((item) => itemKey(item.name) === newKey)) return "duplicate";
+  return items.map((item) =>
+    itemKey(item.name) === key ? { ...item, name: newName, priceCents: change.priceCents } : item,
+  );
+}
+
 /** Highest count first; items with equal counts keep their current order. */
 export function sortByCount(items: Item[]): Item[] {
   return [...items].sort((a, b) => b.count - a.count);

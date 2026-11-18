@@ -6,6 +6,7 @@ import { useOffline } from "next/offline";
 import {
   addItem,
   changeCount,
+  cleanName,
   computeTotal,
   formatAmount,
   itemKey,
@@ -15,11 +16,12 @@ import {
   sortByCount,
   suggestItems,
   totalLabel,
+  updateItem,
   type Item,
 } from "@/lib/items";
 import { createDraftStore, type DraftStore, type ServerList } from "@/lib/draft";
 import { formatLocalTimestamp } from "@/lib/dates";
-import { MinusIcon, PlusIcon, inputClass, primaryButtonClass } from "../../ui";
+import { MinusIcon, PlusIcon, inputClass, primaryButtonClass, secondaryButtonClass } from "../../ui";
 
 type Status =
   | { kind: "idle" }
@@ -34,6 +36,7 @@ export function VisitEditor({ visitId, server }: { visitId: number; server: Serv
   const draft = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot);
   const hydrated = useHydrated();
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const [editing, setEditing] = useState<{ key: string; focus: "name" | "price" } | null>(null);
   const sending = useRef(false);
 
   async function send() {
@@ -122,9 +125,27 @@ export function VisitEditor({ visitId, server }: { visitId: number; server: Serv
           </p>
         ) : (
           <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
-            {draft.items.map((item) => (
-              <ItemRow key={itemKey(item.name)} item={item} store={store} />
-            ))}
+            {draft.items.map((item) =>
+              editing?.key === itemKey(item.name) ? (
+                <ItemEditor
+                  key={itemKey(item.name)}
+                  item={item}
+                  focus={editing.focus}
+                  store={store}
+                  onDone={() => setEditing(null)}
+                />
+              ) : (
+                <ItemRow
+                  key={itemKey(item.name)}
+                  item={item}
+                  store={store}
+                  onEdit={() =>
+                    // A missing price is the likely reason to open it, so start there.
+                    setEditing({ key: itemKey(item.name), focus: item.priceCents === null ? "price" : "name" })
+                  }
+                />
+              ),
+            )}
           </ul>
         )}
         <p className="mt-3 px-1 text-center text-xs text-muted">
@@ -182,18 +203,25 @@ function StatusLine({ status, dirty }: { status: Status; dirty: boolean }) {
   );
 }
 
-function ItemRow({ item, store }: { item: Item; store: DraftStore }) {
+function ItemRow({ item, store, onEdit }: { item: Item; store: DraftStore; onEdit: () => void }) {
   const zero = item.count === 0;
   const change = (delta: 1 | -1) =>
     store.update((d) => ({ ...d, items: changeCount(d.items, item.name, delta), dirty: true }));
   return (
-    <li className={`flex items-center gap-1 py-1.5 pr-2 pl-4 ${zero ? "text-muted" : ""}`}>
-      <p className="min-w-0 flex-1 py-2 leading-snug break-words">
-        <span className={`font-medium ${zero ? "line-through" : ""}`}>{item.name}</span>
-        {item.priceCents !== null && (
-          <span className="ml-1.5 text-sm text-muted tabular-nums">({formatAmount(item.priceCents)})</span>
+    <li className={`flex items-center gap-1 py-1.5 pr-2 pl-2 ${zero ? "text-muted" : ""}`}>
+      <button
+        type="button"
+        onClick={onEdit}
+        aria-label={`Edit ${item.name}`}
+        className="min-w-0 flex-1 rounded-lg px-2 py-2 text-left leading-snug break-words active:bg-surface-2"
+      >
+        <span className={`block font-medium ${zero ? "line-through" : ""}`}>{item.name}</span>
+        {item.priceCents !== null ? (
+          <span className="mt-0.5 block text-sm text-muted tabular-nums">{formatAmount(item.priceCents)} €</span>
+        ) : (
+          <span className="mt-0.5 block text-sm text-accent-strong">+ price</span>
         )}
-      </p>
+      </button>
       <span className="w-11 shrink-0 text-right text-lg font-bold tabular-nums">{item.count}x</span>
       <button
         type="button"
@@ -212,6 +240,93 @@ function ItemRow({ item, store }: { item: Item; store: DraftStore }) {
       >
         <PlusIcon />
       </button>
+    </li>
+  );
+}
+
+function ItemEditor({
+  item,
+  focus,
+  store,
+  onDone,
+}: {
+  item: Item;
+  focus: "name" | "price";
+  store: DraftStore;
+  onDone: () => void;
+}) {
+  const [name, setName] = useState(item.name);
+  const [price, setPrice] = useState(item.priceCents === null ? "" : formatAmount(item.priceCents));
+  const [error, setError] = useState<string | null>(null);
+
+  function save(event: React.FormEvent) {
+    event.preventDefault();
+    if (name.trim() === "") return setError("The item needs a name.");
+    const priceCents = parsePrice(price);
+    if (priceCents === "invalid") return setError("Write the price like 2,60.");
+    const items = updateItem(store.getSnapshot().items, item.name, { name, priceCents });
+    if (items === "duplicate") return setError(`“${name.trim()}” is already in the list.`);
+    const changed = cleanName(name) !== item.name || priceCents !== item.priceCents;
+    if (changed) store.update((d) => ({ ...d, items, dirty: true }));
+    onDone();
+  }
+
+  const clearError = () => setError(null);
+  const cancelOnEscape = (e: React.KeyboardEvent) => e.key === "Escape" && onDone();
+
+  return (
+    <li className="space-y-2 bg-surface-2/60 px-4 py-3">
+      <form onSubmit={save} noValidate className="space-y-2">
+        <label className="block space-y-1">
+          <span className="text-sm font-medium text-muted">Item</span>
+          <input
+            autoFocus={focus === "name"}
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              clearError();
+            }}
+            onKeyDown={cancelOnEscape}
+            maxLength={MAX_NAME_LENGTH}
+            autoComplete="off"
+            autoCapitalize="sentences"
+            enterKeyHint="done"
+            className={inputClass}
+          />
+        </label>
+        <div className="flex items-end gap-2">
+          <label className="min-w-0 flex-1 space-y-1">
+            <span className="text-sm font-medium text-muted">Price</span>
+            <span className="relative block">
+              <input
+                autoFocus={focus === "price"}
+                value={price}
+                onChange={(e) => {
+                  setPrice(e.target.value);
+                  clearError();
+                }}
+                onFocus={(e) => e.target.select()}
+                onKeyDown={cancelOnEscape}
+                inputMode="decimal"
+                enterKeyHint="done"
+                placeholder="No price"
+                autoComplete="off"
+                className={`${inputClass} pr-7 tabular-nums`}
+              />
+              <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-muted">€</span>
+            </span>
+          </label>
+          <button type="button" onClick={onDone} className={`${secondaryButtonClass} px-4`}>
+            Cancel
+          </button>
+          <button type="submit" className={`${primaryButtonClass} px-4`}>
+            Save
+          </button>
+        </div>
+        <p className={`text-sm ${error ? "font-medium text-danger" : "text-muted"}`} role={error ? "alert" : undefined}>
+          {error ?? "Leave the price empty to remove it."}
+        </p>
+      </form>
     </li>
   );
 }

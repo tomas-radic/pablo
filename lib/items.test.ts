@@ -8,6 +8,7 @@ import {
   sortByCount,
   suggestItems,
   totalLabel,
+  updateItem,
   validateItems,
   type Item,
 } from "./items";
@@ -92,6 +93,36 @@ describe("changeCount", () => {
   it("removes an item when '-' is pressed at 0", () => {
     const zero = { ...coffee, count: 0 };
     expect(changeCount([beer, zero], "Espresso", -1)).toEqual([beer]);
+  });
+});
+
+describe("updateItem", () => {
+  it("adds a price to an item without one", () => {
+    const fernet = { name: "Fernet", priceCents: null, count: 2 };
+    expect(updateItem([beer, fernet], "fernet", { name: "Fernet", priceCents: 350 })).toEqual([
+      beer,
+      { ...fernet, priceCents: 350 },
+    ]);
+  });
+
+  it("changes and clears a price", () => {
+    expect((updateItem([beer], "Pivo 12", { name: "Pivo 12", priceCents: 280 }) as Item[])[0].priceCents).toBe(280);
+    expect((updateItem([beer], "Pivo 12", { name: "Pivo 12", priceCents: null }) as Item[])[0].priceCents).toBeNull();
+  });
+
+  it("renames an item, keeping its count and place", () => {
+    expect(updateItem([beer, pizza], "Diavola", { name: "  Pizza  Diavola ", priceCents: 1190 })).toEqual([
+      beer,
+      { ...pizza, name: "Pizza Diavola" },
+    ]);
+  });
+
+  it("allows changing only the letter case", () => {
+    expect((updateItem([beer], "Pivo 12", { name: "PIVO 12", priceCents: 260 }) as Item[])[0].name).toBe("PIVO 12");
+  });
+
+  it("refuses a name another item already has", () => {
+    expect(updateItem([beer, pizza], "Diavola", { name: "pivo 12", priceCents: null })).toBe("duplicate");
   });
 });
 

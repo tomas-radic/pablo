@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Dev server only: let phones on the home network (http://192.168.x.x:3000) load the
+  // dev scripts. Without this Next.js blocks them and the pages never become interactive.
+  allowedDevOrigins: ["192.168.*.*", "10.*.*.*", "*.local"],
   experimental: {
     agentFeedback: true,
     // Offline detection, the useOffline() hook, and retrying navigations once back online.
