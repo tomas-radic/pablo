@@ -1,4 +1,4 @@
-# Publog
+# Pablo
 
 Keeps track of what you (and your friends) ordered during one pub visit, so you can
 check it against the bill when you leave. It's a mobile-first web app that you can add
@@ -28,7 +28,7 @@ npm run user:create -- you@example.com
 ```
 
 It asks for the password twice without showing it. For automation, set
-`PUBLOG_PASSWORD` instead.
+`PABLO_PASSWORD` instead.
 
 ## Scripts
 
@@ -45,7 +45,7 @@ It asks for the password twice without showing it. For automation, set
 
 | Variable                | Default              | Meaning                                                   |
 | ----------------------- | -------------------- | --------------------------------------------------------- |
-| `DATABASE_PATH`         | `data/publog.sqlite` | Where the SQLite file lives                               |
+| `DATABASE_PATH`         | `data/pablo.sqlite` | Where the SQLite file lives                               |
 | `SESSION_COOKIE_SECURE` | `true` in production | Set to `false` to sign in over plain HTTP (e.g. LAN test) |
 
 ## How it works
@@ -66,7 +66,7 @@ It asks for the password twice without showing it. For automation, set
 
 ## Deploying with Dokku
 
-Publog runs on the Hetzner VPS next to the other Dokku apps, at
+Pablo runs on the Hetzner VPS next to the other Dokku apps, at
 **https://pablo.webiky.online**. Dokku builds the `Dockerfile` on the server when you
 `git push`, runs the container, puts its nginx in front and gets a free Let's Encrypt
 certificate.
@@ -74,8 +74,8 @@ certificate.
 ```
 https://pablo.webiky.online
   → Dokku's nginx (HTTPS certificate from Let's Encrypt)
-    → publog container, port 5000 (Next.js standalone server, runs as user "node")
-        /app/data  ←  /var/lib/dokku/data/storage/publog on the server (the SQLite file)
+    → pablo container, port 5000 (Next.js standalone server, runs as user "node")
+        /app/data  ←  /var/lib/dokku/data/storage/pablo on the server (the SQLite file)
 ```
 
 Files in the repo that Dokku uses:
@@ -104,7 +104,7 @@ $ dokku plugin:list            # dokku-letsencrypt should be listed (your other 
 **2. Create the app**
 
 ```
-$ dokku apps:create publog
+$ dokku apps:create pablo
 ```
 
 **3. Create the folder for the database and mount it into the app**
@@ -112,24 +112,24 @@ $ dokku apps:create publog
 The container runs as uid 1000 (`--chown heroku` means 1000:1000).
 
 ```
-$ dokku storage:create publog --chown heroku
-$ dokku storage:mount publog /var/lib/dokku/data/storage/publog:/app/data
+$ dokku storage:create pablo --chown heroku
+$ dokku storage:mount pablo /var/lib/dokku/data/storage/pablo:/app/data
 ```
 
 On an older Dokku that doesn't know `storage:create`, use
-`dokku storage:ensure-directory --chown heroku publog` instead of the first line.
+`dokku storage:ensure-directory --chown heroku pablo` instead of the first line.
 
 **4. Set the domain and the branch Dokku deploys**
 
 ```
-$ dokku domains:set publog pablo.webiky.online
-$ dokku git:set publog deploy-branch main
+$ dokku domains:set pablo pablo.webiky.online
+$ dokku git:set pablo deploy-branch main
 ```
 
 **5. Add the Dokku remote and push** (on your Mac)
 
 ```
-% git remote add dokku dokku@188.34.184.8:publog
+% git remote add dokku dokku@188.34.184.8:pablo
 % git push dokku main
 ```
 
@@ -151,17 +151,17 @@ and the session cookie only works over HTTPS.
 **6. Turn on HTTPS** (on the server)
 
 ```
-$ dokku letsencrypt:enable publog
+$ dokku letsencrypt:enable pablo
 $ dokku letsencrypt:cron-job --add      # auto-renewal; harmless if already added
 ```
 
-If it asks for an email: `dokku letsencrypt:set publog email you@example.com`, then
+If it asks for an email: `dokku letsencrypt:set pablo email you@example.com`, then
 enable again.
 
 **7. Create your account**
 
 ```
-$ dokku run publog npm run user:create -- you@example.com
+$ dokku run pablo npm run user:create -- you@example.com
 ```
 
 It asks for the password twice (at least 8 characters). Run it again with the same
@@ -187,21 +187,21 @@ version keeps serving until the new one is ready.
 
 | Command                          | What it shows / does                                    |
 | -------------------------------- | ------------------------------------------------------- |
-| `dokku logs publog -t`           | Live app logs                                           |
-| `dokku ps:report publog`         | Whether it's running, restarts                          |
-| `dokku ports:report publog`      | Port mapping, expect `http:80:5000 https:443:5000`      |
-| `dokku storage:report publog`    | The `/app/data` mount                                   |
-| `dokku ps:restart publog`        | Restart the container                                   |
+| `dokku logs pablo -t`           | Live app logs                                           |
+| `dokku ps:report pablo`         | Whether it's running, restarts                          |
+| `dokku ports:report pablo`      | Port mapping, expect `http:80:5000 https:443:5000`      |
+| `dokku storage:report pablo`    | The `/app/data` mount                                   |
+| `dokku ps:restart pablo`        | Restart the container                                   |
 | `dokku letsencrypt:list`         | Certificates and when they expire                       |
 
 ### Backups
 
-Everything is in one file: `/var/lib/dokku/data/storage/publog/publog.sqlite`. To
+Everything is in one file: `/var/lib/dokku/data/storage/pablo/pablo.sqlite`. To
 copy it safely while the app runs (needs `apt install sqlite3` once):
 
 ```
 $ mkdir -p /root/backups
-$ sqlite3 /var/lib/dokku/data/storage/publog/publog.sqlite ".backup '/root/backups/publog-$(date +%F).sqlite'"
+$ sqlite3 /var/lib/dokku/data/storage/pablo/pablo.sqlite ".backup '/root/backups/pablo-$(date +%F).sqlite'"
 ```
 
 Put that line in `crontab -e` (with `%` written as `\%` there) for a daily backup, and

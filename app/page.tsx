@@ -11,7 +11,7 @@ export default function HomePage() {
   return (
     <main className="flex flex-1 flex-col gap-6">
       <header className="flex items-center justify-between">
-        <p className="text-sm font-semibold tracking-wide text-accent-strong uppercase">Publog</p>
+        <p className="text-sm font-semibold tracking-wide text-accent-strong uppercase">Pablo</p>
         <SignOutButton />
       </header>
       <div className="flex items-end justify-between gap-4">

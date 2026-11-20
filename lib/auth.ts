@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { db } from "./db";
 import { verifyPassword } from "./db-core";
 
-export const SESSION_COOKIE = "publog_session";
+export const SESSION_COOKIE = "pablo_session";
 const SESSION_DAYS = 90;
 
 export type User = { id: number; email: string };

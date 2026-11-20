@@ -3,13 +3,13 @@
 //   npm run user:create -- you@example.com
 //
 // Asks for the password without showing it. For scripts, pass it in the
-// PUBLOG_PASSWORD environment variable instead.
+// PABLO_PASSWORD environment variable instead.
 
 import { stdin, stdout } from "node:process";
 import { databasePath, MIN_PASSWORD_LENGTH, openDatabase, upsertUser } from "../lib/db-core.ts";
 
 async function askHidden(question: string): Promise<string> {
-  if (!stdin.isTTY) throw new Error("No terminal to ask for the password; set PUBLOG_PASSWORD.");
+  if (!stdin.isTTY) throw new Error("No terminal to ask for the password; set PABLO_PASSWORD.");
   stdout.write(question);
   stdin.setRawMode(true);
   stdin.resume();
@@ -43,7 +43,7 @@ async function main() {
     console.error("Usage: npm run user:create -- <email>");
     process.exit(1);
   }
-  let password = process.env.PUBLOG_PASSWORD;
+  let password = process.env.PABLO_PASSWORD;
   if (!password) {
     password = await askHidden(`Password for ${email} (at least ${MIN_PASSWORD_LENGTH} characters): `);
     const again = await askHidden("Same password again: ");

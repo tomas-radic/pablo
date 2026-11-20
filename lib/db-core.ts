@@ -54,7 +54,7 @@ CREATE INDEX IF NOT EXISTS items_visit ON items(visit_id, position);
 
 export function databasePath(): string {
   // The ignore comment stops Next's build from bundling the whole project because of this path.
-  return resolve(/*turbopackIgnore: true*/ process.env.DATABASE_PATH ?? "data/publog.sqlite");
+  return resolve(/*turbopackIgnore: true*/ process.env.DATABASE_PATH ?? "data/pablo.sqlite");
 }
 
 export function openDatabase(path: string = databasePath()): DatabaseSync {

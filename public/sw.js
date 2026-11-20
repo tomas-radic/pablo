@@ -1,11 +1,11 @@
-// Publog service worker: lets pages you've opened before load without a connection.
+// Pablo service worker: lets pages you've opened before load without a connection.
 // - App files (/_next/static) never change for a given URL: cache first.
 // - Pages: network first, falling back to the last copy saved on this device.
 // - The API and everything else go straight to the network.
 
 const VERSION = "v1";
-const STATIC_CACHE = `publog-static-${VERSION}`;
-const PAGE_CACHE = `publog-pages-${VERSION}`;
+const STATIC_CACHE = `pablo-static-${VERSION}`;
+const PAGE_CACHE = `pablo-pages-${VERSION}`;
 
 self.addEventListener("install", () => self.skipWaiting());
 
@@ -81,7 +81,7 @@ async function networkFirst(request) {
 }
 
 const OFFLINE_PAGE = `<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline · Publog</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline · Pablo</title>
 <style>body{font-family:system-ui,sans-serif;background:#f7f3ec;color:#1f1a16;margin:0;display:grid;place-items:center;min-height:100dvh;padding:1rem;text-align:center}
 @media (prefers-color-scheme:dark){body{background:#15110e;color:#f4ede3}}a{color:inherit}</style></head>
 <body><main><h1>You’re offline</h1><p>This page wasn’t opened on this phone before, so there’s no saved copy.</p>

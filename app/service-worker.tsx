@@ -44,7 +44,7 @@ export function ServiceWorker() {
 export async function forgetOfflinePages(paths: string[]): Promise<void> {
   if (!("caches" in window)) return;
   const keys = await caches.keys();
-  for (const key of keys.filter((k) => k.startsWith("publog-pages"))) {
+  for (const key of keys.filter((k) => k.startsWith("pablo-pages"))) {
     const cache = await caches.open(key);
     for (const request of await cache.keys()) {
       if (paths.includes(new URL(request.url).pathname)) await cache.delete(request);
@@ -56,5 +56,5 @@ export async function forgetOfflinePages(paths: string[]): Promise<void> {
 export async function clearOfflineCache(): Promise<void> {
   if (!("caches" in window)) return;
   const keys = await caches.keys();
-  await Promise.all(keys.filter((key) => key.startsWith("publog-pages")).map((key) => caches.delete(key)));
+  await Promise.all(keys.filter((key) => key.startsWith("pablo-pages")).map((key) => caches.delete(key)));
 }

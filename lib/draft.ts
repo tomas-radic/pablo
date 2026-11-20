@@ -38,7 +38,7 @@ export function chooseDraft(server: ServerList, local: Draft | null): Draft {
  * new visit the id of a deleted one, and the old draft must not show up there.
  */
 export function draftKey(visitId: number, createdAt: string): string {
-  return `publog:visit:${visitId}:${createdAt}`;
+  return `pablo:visit:${visitId}:${createdAt}`;
 }
 
 export function readDraft(key: string): Draft | null {

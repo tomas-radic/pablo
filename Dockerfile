@@ -1,5 +1,5 @@
-# Production image for Publog. Dokku builds this on the server on every `git push dokku main`.
-# Locally: docker build -t publog . && docker run -p 3100:5000 -v publog-data:/app/data publog
+# Production image for Pablo. Dokku builds this on the server on every `git push dokku main`.
+# Locally: docker build -t pablo . && docker run -p 3100:5000 -v pablo-data:/app/data pablo
 
 # ---- 1. Install dependencies (cached until package-lock.json changes)
 FROM node:24-bookworm-slim AS deps
@@ -24,7 +24,7 @@ ENV NODE_ENV=production \
     PORT=5000 \
     HOSTNAME=0.0.0.0 \
     # The SQLite file lives in /app/data, which is mounted from the server's disk.
-    DATABASE_PATH=/app/data/publog.sqlite \
+    DATABASE_PATH=/app/data/pablo.sqlite \
     # node:sqlite still prints an "experimental" warning on start; hide it.
     NODE_OPTIONS=--disable-warning=ExperimentalWarning
 

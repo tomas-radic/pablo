@@ -6,8 +6,8 @@
 
 import { openDatabase, upsertUser } from "../lib/db-core.ts";
 
-const DEV_EMAIL = "dev@publog.test";
-const DEV_PASSWORD = "publog-dev-2026";
+const DEV_EMAIL = "dev@pablo.test";
+const DEV_PASSWORD = "pablo-dev-2026";
 
 if (process.env.NODE_ENV === "production") {
   console.error("Refusing to seed development data with NODE_ENV=production.");

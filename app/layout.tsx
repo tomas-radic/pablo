@@ -16,9 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: { default: "Publog", template: "%s · Publog" },
+  title: { default: "Pablo", template: "%s · Pablo" },
   description: "Keep track of what you ordered at the pub and check it against the bill.",
-  appleWebApp: { capable: true, title: "Publog", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "Pablo", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
