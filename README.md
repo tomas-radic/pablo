@@ -56,10 +56,11 @@ It asks for the password twice without showing it. For automation, set
 - **Visits**: `/` lists them, `/visits/new` and `/visits/[id]/edit` create and edit.
   Each user only sees their own.
 - **Items**: `/visits/[id]` edits the list in the browser. Every change is saved to
-  `localStorage` straight away (`lib/draft.ts`). **Submit list** sorts by count and
-  then sends the whole list to `PUT /api/visits/[id]/items`, which replaces what the
-  server has. If the server can't be reached, the submit is retried when the phone
-  is back online. The rules (merging names, totals, prices like `2,60`) live in
+  `localStorage` straight away (`lib/draft.ts`). Configured number of seconds after the last change
+  (or straight away on **Submit now**, or when the page is hidden or left) the list
+  is sorted by count and sent whole to `PUT /api/visits/[id]/items`, which replaces
+  what the server has. If the server can't be reached, the submit is retried when
+  the phone is back online. The rules (merging names, totals, prices like `2,60`) live in
   `lib/items.ts` and are shared by the browser and the server.
 - **Offline**: `public/sw.js` (only in production builds) keeps app files and the
   pages you've opened, so a visit page reloads even without a connection.

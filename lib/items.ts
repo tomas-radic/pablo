@@ -87,7 +87,7 @@ export function totalLabel(total: Total): string {
     case "exact":
       return `${formatAmount(total.cents)} €`;
     case "at-least":
-      return `more than ${formatAmount(total.cents)} €`;
+      return `> ${formatAmount(total.cents)} €`;
   }
 }
 

@@ -9,7 +9,7 @@ export type Draft = {
   dirty: boolean;
   /** When the server last accepted this list (ISO time from the server). */
   lastSubmittedAt: string | null;
-  /** Submit was pressed but hasn't reached the server yet; retried when back online. */
+  /** A submit was started but hasn't reached the server yet; retried when back online. */
   pendingSubmit: boolean;
 };
 

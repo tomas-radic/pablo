@@ -19,9 +19,14 @@ import {
   updateItem,
   type Item,
 } from "@/lib/items";
-import { createDraftStore, draftKey, type DraftStore, type ServerList } from "@/lib/draft";
+import { createDraftStore, draftKey, type ServerList } from "@/lib/draft";
 import { formatLocalTimestamp } from "@/lib/dates";
 import { MinusIcon, PlusIcon, inputClass, primaryButtonClass, secondaryButtonClass } from "../../ui";
+
+/** The list is sent to the server this long after the last change. */
+const AUTO_SUBMIT_DELAY_MS = 10_000;
+
+type EditItems = (change: (items: Item[]) => Item[]) => void;
 
 type Status =
   | { kind: "idle" }
@@ -58,6 +63,8 @@ export function VisitEditor({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items: sent }),
         cache: "no-store",
+        // Lets the request finish when it's sent because the page is being hidden or left.
+        keepalive: true,
       });
       const body = await response.json().catch(() => null);
       if (response.ok) {
@@ -84,23 +91,72 @@ export function VisitEditor({
     }
   }
 
+  // The pending auto-submit, restarted by every change to the list.
+  const autoSubmit = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  function cancelAutoSubmit() {
+    clearTimeout(autoSubmit.current);
+    autoSubmit.current = undefined;
+  }
+
   function submit() {
+    cancelAutoSubmit();
+    // A request is still in flight: try again once it has had time to finish.
+    if (sending.current) return scheduleAutoSubmit();
     // Reorder right away, whatever the server says.
     store.update((d) => ({ ...d, items: sortByCount(d.items), pendingSubmit: true }));
     void send();
   }
 
-  // Retry a submit that couldn't reach the server: on load, and whenever the connection
-  // comes back (the browser's "online" event, or Next.js noticing the server is reachable).
+  function scheduleAutoSubmit() {
+    cancelAutoSubmit();
+    autoSubmit.current = setTimeout(() => submitRef.current(), AUTO_SUBMIT_DELAY_MS);
+  }
+
+  /** Sends a waiting auto-submit right now (the page is being hidden or left). */
+  function flushAutoSubmit() {
+    if (autoSubmit.current !== undefined) submitRef.current();
+  }
+
+  const edit: EditItems = (change) => {
+    store.update((d) => ({ ...d, items: change(d.items), dirty: true }));
+    scheduleAutoSubmit();
+  };
+
   const offline = useOffline();
   const sendRef = useRef(send);
+  const submitRef = useRef(submit);
+  const flushRef = useRef(flushAutoSubmit);
   useEffect(() => {
     sendRef.current = send;
+    submitRef.current = submit;
+    flushRef.current = flushAutoSubmit;
   });
+
+  // Don't wait out the delay when the phone is locked, the app is switched away from,
+  // or this page is left: the timer may never get to run.
+  useEffect(() => {
+    const flush = () => flushRef.current();
+    const onVisibilityChange = () => document.visibilityState === "hidden" && flush();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pagehide", flush);
+      flush();
+    };
+  }, []);
+
+  // Send what the server doesn't have yet: on load, and whenever the connection comes
+  // back (the browser's "online" event, or Next.js noticing the server is reachable).
   useEffect(() => {
     if (offline) return;
     const retry = () => {
-      if (store.getSnapshot().pendingSubmit && navigator.onLine) void sendRef.current();
+      if (!navigator.onLine) return;
+      const { pendingSubmit, dirty } = store.getSnapshot();
+      if (pendingSubmit) void sendRef.current();
+      // Changes left from an earlier visit to this page (e.g. the session had ended).
+      else if (dirty && autoSubmit.current === undefined) submitRef.current();
     };
     const timer = setTimeout(retry, 0);
     window.addEventListener("online", retry);
@@ -124,7 +180,7 @@ export function VisitEditor({
         </p>
       </section>
 
-      <AddItemForm store={store} items={draft.items} />
+      <AddItemForm edit={edit} items={draft.items} />
 
       <section aria-label="Ordered items" className="flex-1">
         {draft.items.length === 0 ? (
@@ -139,14 +195,15 @@ export function VisitEditor({
                   key={itemKey(item.name)}
                   item={item}
                   focus={editing.focus}
-                  store={store}
+                  items={draft.items}
+                  edit={edit}
                   onDone={() => setEditing(null)}
                 />
               ) : (
                 <ItemRow
                   key={itemKey(item.name)}
                   item={item}
-                  store={store}
+                  edit={edit}
                   onEdit={() =>
                     // A missing price is the likely reason to open it, so start there.
                     setEditing({ key: itemKey(item.name), focus: item.priceCents === null ? "price" : "name" })
@@ -173,17 +230,23 @@ export function VisitEditor({
           disabled={status.kind === "sending"}
           className={`${primaryButtonClass} w-full`}
         >
-          {status.kind === "sending" ? "Submitting…" : "Submit list"}
+          {status.kind === "sending" ? "Submitting…" : "Submit now"}
         </button>
+        <p className="mt-1.5 text-center text-xs text-muted">
+          Submits automatically every {AUTO_SUBMIT_DELAY_MS / 1000} seconds.
+        </p>
       </div>
     </div>
   );
 }
 
 function StatusLine({ status, dirty }: { status: Status; dirty: boolean }) {
-  let text: React.ReactNode = dirty ? "Unsubmitted changes" : " ";
+  let text: React.ReactNode = dirty ? "Unsaved changes, saving shortly…" : " ";
   let tone = dirty ? "text-accent-strong" : "text-muted";
-  if (status.kind === "offline") {
+  if (status.kind === "sending") {
+    text = "Saving…";
+    tone = "text-muted";
+  } else if (status.kind === "offline") {
     text = "No connection. Saved on this phone, it will be sent when you’re back online.";
     tone = "text-accent-strong";
   } else if (status.kind === "error") {
@@ -211,10 +274,9 @@ function StatusLine({ status, dirty }: { status: Status; dirty: boolean }) {
   );
 }
 
-function ItemRow({ item, store, onEdit }: { item: Item; store: DraftStore; onEdit: () => void }) {
+function ItemRow({ item, edit, onEdit }: { item: Item; edit: EditItems; onEdit: () => void }) {
   const zero = item.count === 0;
-  const change = (delta: 1 | -1) =>
-    store.update((d) => ({ ...d, items: changeCount(d.items, item.name, delta), dirty: true }));
+  const change = (delta: 1 | -1) => edit((items) => changeCount(items, item.name, delta));
   return (
     <li className={`flex items-center gap-1 py-1.5 pr-2 pl-2 ${zero ? "text-muted" : ""}`}>
       <button
@@ -255,12 +317,14 @@ function ItemRow({ item, store, onEdit }: { item: Item; store: DraftStore; onEdi
 function ItemEditor({
   item,
   focus,
-  store,
+  items: current,
+  edit,
   onDone,
 }: {
   item: Item;
   focus: "name" | "price";
-  store: DraftStore;
+  items: Item[];
+  edit: EditItems;
   onDone: () => void;
 }) {
   const [name, setName] = useState(item.name);
@@ -272,10 +336,10 @@ function ItemEditor({
     if (name.trim() === "") return setError("The item needs a name.");
     const priceCents = parsePrice(price);
     if (priceCents === "invalid") return setError("Write the price like 2,60.");
-    const items = updateItem(store.getSnapshot().items, item.name, { name, priceCents });
+    const items = updateItem(current, item.name, { name, priceCents });
     if (items === "duplicate") return setError(`“${name.trim()}” is already in the list.`);
     const changed = cleanName(name) !== item.name || priceCents !== item.priceCents;
-    if (changed) store.update((d) => ({ ...d, items, dirty: true }));
+    if (changed) edit(() => items);
     onDone();
   }
 
@@ -339,7 +403,7 @@ function ItemEditor({
   );
 }
 
-function AddItemForm({ store, items }: { store: DraftStore; items: Item[] }) {
+function AddItemForm({ edit, items }: { edit: EditItems; items: Item[] }) {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [quantity, setQuantity] = useState("1");
@@ -364,7 +428,7 @@ function AddItemForm({ store, items }: { store: DraftStore; items: Item[] }) {
     if (!Number.isInteger(qty) || qty < 1 || qty > MAX_COUNT) {
       return setError(`The number must be between 1 and ${MAX_COUNT}.`);
     }
-    store.update((d) => ({ ...d, items: addItem(d.items, { name, priceCents, quantity: qty }), dirty: true }));
+    edit((items) => addItem(items, { name, priceCents, quantity: qty }));
     setName("");
     setPrice("");
     setQuantity("1");
