@@ -116,10 +116,10 @@ export function VisitEditor({
     <div className="flex flex-1 flex-col gap-4">
       <section
         aria-label="Total"
-        className="sticky top-2 z-20 rounded-2xl bg-ink px-5 py-4 text-bg shadow-lg shadow-black/10"
+        className="sticky top-2 z-20 flex items-baseline justify-between gap-3 rounded-2xl bg-ink px-5 py-3 text-bg shadow-lg shadow-black/10"
       >
-        <p className="text-xs font-semibold tracking-wide uppercase opacity-70">To pay</p>
-        <p className="mt-0.5 text-[1.75rem] leading-tight font-bold tabular-nums" aria-live="polite">
+        <p className="shrink-0 text-xs font-semibold tracking-wide uppercase opacity-70">To pay</p>
+        <p className="text-right text-[1.25rem] leading-tight font-bold tabular-nums" aria-live="polite">
           {totalLabel(total)}
         </p>
       </section>
