@@ -112,12 +112,12 @@ $ dokku apps:create pablo
 The container runs as uid 1000 (`--chown heroku` means 1000:1000).
 
 ```
-$ dokku storage:create pablo --chown heroku
+$ dokku storage:ensure-directory --chown heroku pablo
 $ dokku storage:mount pablo /var/lib/dokku/data/storage/pablo:/app/data
 ```
 
-On an older Dokku that doesn't know `storage:create`, use
-`dokku storage:ensure-directory --chown heroku pablo` instead of the first line.
+The first line creates `/var/lib/dokku/data/storage/pablo`. (Newer Dokku releases also
+have `dokku storage:create pablo --chown heroku`; the server runs 0.37.2, which doesn't.)
 
 **4. Set the domain and the branch Dokku deploys**
 
