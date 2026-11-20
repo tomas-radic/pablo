@@ -1,0 +1,14 @@
+# Not needed inside the Docker build (the image installs and builds its own).
+node_modules
+.next
+data
+.git
+.idea
+.junie
+.claude
+.env*
+*.log
+*.tsbuildinfo
+next-env.d.ts
+Dockerfile
+.dockerignore

@@ -1,0 +1,14 @@
+{
+  "name": "publog",
+  "healthchecks": {
+    "web": [
+      {
+        "type": "startup",
+        "name": "web check",
+        "description": "Checking that /api/up answers before switching traffic",
+        "path": "/api/up",
+        "attempts": 5
+      }
+    ]
+  }
+}

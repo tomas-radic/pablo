@@ -9,8 +9,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "user:create": "node --disable-warning=ExperimentalWarning scripts/create-user.ts",
-    "db:seed": "node --disable-warning=ExperimentalWarning scripts/seed-dev.ts"
+    "user:create": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/create-user.ts",
+    "db:seed": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/seed-dev.ts"
   },
   "dependencies": {
     "next": "16.4.6",
